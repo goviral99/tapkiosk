@@ -13,15 +13,9 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
     apiVersion: '2024-06-20',
 });
 
-// Simple health check
-app.get('/health', (req, res) => {
-    res.json({ ok: true, env: process.env.NODE_ENV || 'dev' });
-});
-
-// Placeholder: device config endpoint (we’ll flesh this out later)
+// Device config without location
 const devices = {
     'device-123': {
-          location: 'tml_GQr5MAWGkvjntP', 
         orgId: 'org-rahma',
         currency: 'cad',
         presets: [
@@ -34,24 +28,21 @@ const devices = {
 
 app.get('/devices/:deviceId/config', (req, res) => {
     const device = devices[req.params.deviceId];
-    if (!device) {
-        return res.status(404).json({ error: 'Unknown device' });
-    }
+    if (!device) return res.status(404).json({ error: 'Unknown device' });
     res.json(device);
 });
 
-// Stripe Terminal: provide a connection token to the client
+// Provide connection token
 app.post('/connection_token', async (req, res) => {
     try {
-        const connectionToken = await stripe.terminal.connectionTokens.create();
-        res.json({ secret: connectionToken.secret });
+        const token = await stripe.terminal.connectionTokens.create();
+        res.json({ secret: token.secret });
     } catch (err) {
-        console.error('Error creating connection token:', err);
         res.status(500).json({ error: err.message });
     }
 });
 
-// Stripe Terminal: Create PaymentIntent for tap-to-pay
+// Create PaymentIntent
 app.post('/payment_intents', async (req, res) => {
     try {
         const { amount, currency } = req.body;
@@ -60,22 +51,18 @@ app.post('/payment_intents', async (req, res) => {
             return res.status(400).json({ error: 'Missing amount or currency' });
         }
 
-        const paymentIntent = await stripe.paymentIntents.create({
+        const pi = await stripe.paymentIntents.create({
             amount,
             currency,
             payment_method_types: ['card_present', 'interac_present'],
             capture_method: 'automatic',
         });
 
-        res.json(paymentIntent);
+        res.json(pi);
     } catch (err) {
-        console.error('Error creating PaymentIntent:', err);
         res.status(500).json({ error: err.message });
     }
 });
 
 const PORT = process.env.PORT || 4000;
-
-app.listen(PORT, () => {
-    console.log(`Backend listening on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
