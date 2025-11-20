@@ -21,6 +21,7 @@ app.get('/health', (req, res) => {
 // Placeholder: device config endpoint (we’ll flesh this out later)
 const devices = {
     'device-123': {
+          location: 'tml_GQr5MAWGkvjntP', 
         orgId: 'org-rahma',
         currency: 'cad',
         presets: [
